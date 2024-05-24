@@ -1,6 +1,7 @@
 <?php
 session_start();
 
+$attendeesNumber = null;
 
 try {
   $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
@@ -14,6 +15,17 @@ try {
     JOIN customer_support ON event.customer_support_id = customer_support.customer_support_id
     WHERE event_id = $event_id")->fetch(PDO::FETCH_ASSOC);
     $tickets = $connection->query("SELECT * FROM ticket WHERE event_id = $event_id")->fetchAll(PDO::FETCH_ASSOC);
+
+    $attendees = $connection->query("SELECT amount FROM transaction
+    JOIN ticket ON transaction.ticket_id = ticket.ticket_id
+    JOIN event ON ticket.event_id = event.event_id
+    WHERE event.event_id = $event_id")->fetchAll(PDO::FETCH_ASSOC);
+
+    if ($attendees) {
+      foreach ($attendees as $attendee) {
+        $attendeesNumber += (int) $attendee['amount'];
+      }
+    }
   }
 } catch (PDOException $e) {
   echo "Error: " . $e->getMessage();
@@ -63,10 +75,16 @@ try {
 
           <!-- Header -->
           <div class='flex flex-row gap-4'>
+            <?php ?>
             <img src=<?php echo $event["portrait_image_url"] ?> class='h-[360px] aspect-auto rounded-md object-fit' />
             <div class="flex flex-col w-full">
               <h1 class='font-[900] text-white drop-shadow-xl text-4xl'><?php echo $event['event_name'] ?></h1>
               <p class='font-[300] text-slate-300 drop-shadow-xl text-xl'><?php echo $event['venue_name'] ?></p>
+              <?php if ($attendeesNumber >= 1) : ?>
+                <p class='font-[300] text-slate-300 drop-shadow-xl'>There are <?php echo $attendeesNumber ?> attendee/s on this event.</p>
+              <?php else : ?>
+                <p class='font-[300] text-slate-300 drop-shadow-xl'>There are no attendee/s yet on this event.</p>
+              <?php endif ?>
               <div class="flex flex-col gap-6 my-8">
                 <h1 class="text-2xl font-[400] text-white drop-shadow-xl">About</h1>
                 <div class="h-[1px] w-full bg-slate-300 rounded-lg"></div>
@@ -119,6 +137,9 @@ try {
               <?php endif; ?>
             </div>
           </div>
+
+
+
         </div>
       </div>
     <?php else : ?>
