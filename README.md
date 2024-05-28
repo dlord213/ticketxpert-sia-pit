@@ -5,5 +5,9 @@
 * Run application
 
 ## Connections
-* PDO-pgsql
+* PDO
 * PostgreSQL
+
+## Requirements
+* PHP 8 >= version
+* Enabled PDO PGSQL driver on PHP.ini
