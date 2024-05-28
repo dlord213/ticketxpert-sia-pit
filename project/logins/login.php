@@ -8,7 +8,7 @@ if (isset($_SESSION['isLoggedIn'])) {
   exit();
 }
 
-$connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
+$connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   $password = $_POST['password'];
 
   try {
-    $query = $connection->query("SELECT * FROM users WHERE username = '$username'");
+    $query = $connection->query("SELECT * FROM users.user WHERE username = '$username'");
 
     $user = $query->fetch(PDO::FETCH_ASSOC);
 
@@ -41,8 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $error_message = "Error: " . $e->getMessage();
   }
 }
-
-
 
 ?>
 

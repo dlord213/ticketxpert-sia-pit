@@ -12,8 +12,8 @@
         try {
 
           $eventQuery = $connection->query("SELECT event_id, event.name AS event_name, event._date, venue.name AS venue_name, portrait_image_url 
-          FROM event 
-          JOIN venue ON event.venue_id = venue.venue_id;");
+          FROM events.event 
+          JOIN events.venue ON event.venue_id = venue.venue_id;");
 
           $events = $eventQuery->fetchAll(PDO::FETCH_ASSOC);
 

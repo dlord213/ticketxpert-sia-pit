@@ -4,26 +4,30 @@ session_start();
 $attendeesNumber = null;
 
 try {
-  $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
+  $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
   if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $event_id = intval($_GET['id']);
 
-    $event = $connection->query("SELECT event.name AS event_name, venue.name AS venue_name, description, _date, portrait_image_url, cover_image_url, seat_plan_image_url, customer_support.name AS support_name, contact_number AS support_number
-    FROM event 
-    JOIN venue ON event.venue_id = venue.venue_id
-    JOIN customer_support ON event.customer_support_id = customer_support.customer_support_id
+    $event = $connection->query("SELECT event.name AS event_name, venue.name AS venue_name, description, _date, portrait_image_url, cover_image_url, seat_plan_image_url, 
+    customer_support.name AS support_name, contact_number AS support_number
+    FROM events.event
+    JOIN events.venue ON event.venue_id = venue.venue_id
+    JOIN events.customer_support ON event.customer_support_id = customer_support.customer_support_id
     WHERE event_id = $event_id")->fetch(PDO::FETCH_ASSOC);
-    $tickets = $connection->query("SELECT * FROM ticket WHERE event_id = $event_id")->fetchAll(PDO::FETCH_ASSOC);
 
-    $attendees = $connection->query("SELECT amount FROM transaction
-    JOIN ticket ON transaction.ticket_id = ticket.ticket_id
-    JOIN event ON ticket.event_id = event.event_id
+    if ($event) {
+      $tickets = $connection->query("SELECT * FROM tickets.ticket WHERE event_id = $event_id")->fetchAll(PDO::FETCH_ASSOC);
+
+      $attendees = $connection->query("SELECT amount FROM transactions.transaction
+    JOIN tickets.ticket ON transaction.ticket_id = ticket.ticket_id
+    JOIN events.event ON ticket.event_id = event.event_id
     WHERE event.event_id = $event_id")->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($attendees) {
-      foreach ($attendees as $attendee) {
-        $attendeesNumber += (int) $attendee['amount'];
+      if ($attendees) {
+        foreach ($attendees as $attendee) {
+          $attendeesNumber += (int) $attendee['amount'];
+        }
       }
     }
   }
@@ -40,7 +44,7 @@ try {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo isset($event) ? htmlspecialchars($event['event_name'], ENT_QUOTES, 'UTF-8') : 'Event Not Found'; ?></title>
+  <title><?php echo isset($event) && $event ? htmlspecialchars($event['event_name'], ENT_QUOTES, 'UTF-8') : 'Ticketxpert / Event Not Found'; ?></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
@@ -53,7 +57,9 @@ try {
 </head>
 
 <body>
-  <?php require './components/headerComponent.php' ?>
+  <?php if ($event) : ?>
+    <?php require './components/headerComponent.php' ?>
+  <?php endif; ?>
 
   <main class='min-h-[100vh] relative'>
     <?php if ($event) : ?>
@@ -138,15 +144,20 @@ try {
             </div>
           </div>
 
-
-
         </div>
       </div>
     <?php else : ?>
-      <p><?php echo $error_message; ?></p>
+      <div class="flex flex-col justify-center items-center h-[100vh]">
+        <div>
+          <h1 class="font-[900] text-slate-800 text-4xl">Error</h1>
+          <p class="p-4 bg-slate-800 text-white rounded-lg font-[400] text-lg">The event doesn't exist in our record.</p>
+        </div>
+      </div>
     <?php endif; ?>
   </main>
-  <?php require './components/footerComponent.php' ?>
+  <?php if ($event) : ?>
+    <?php require './components/footerComponent.php' ?>
+  <?php endif; ?>
 </body>
 
 </html>

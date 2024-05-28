@@ -3,9 +3,9 @@
     <ul class="splide__list">
       <?php
 
-      $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
+      $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
-      $images = $connection->query("SELECT event_id, cover_image_url FROM event;", PDO::FETCH_ASSOC);
+      $images = $connection->query("SELECT event_id, cover_image_url FROM events.event;", PDO::FETCH_ASSOC);
 
       foreach ($images as $image) {
         echo "<li class='splide__slide h-[50vh]'><a href=event.php?id=" . $image['event_id']  . "><img class='w-full object-contain' src=" . $image['cover_image_url'] . " /></a></li>";

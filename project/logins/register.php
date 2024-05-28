@@ -7,7 +7,7 @@ if (isset($_SESSION['isLoggedIn'])) {
   exit();
 }
 
-$connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
+$connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   $fullName = $_POST['full_name'];
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $connection->beginTransaction();
 
-    $stmt = $connection->prepare("INSERT INTO users(name, address, contact_number, username, password) VALUES(?, ?, ?, ?, ?)");
+    $stmt = $connection->prepare("INSERT INTO users.user(name, address, contact_number, username, password) VALUES(?, ?, ?, ?, ?)");
     $stmt->execute([$fullName, $address, $phoneNumber, $username, $password]);
 
     $connection->commit();
