@@ -45,7 +45,41 @@ if (!isset($_SESSION['isLoggedIn'])) {
       </div>
     </div>
     <hr class="w-full bg-slate-700 my-4 border-slate-700">
-    <h1 class="text-2xl text-slate-800 font-[300]">Tickets / Transactions</h1>
+    <h1 class="text-2xl text-slate-800 font-[300]">Unpaid Tickets / Transactions</h1>
+    <?php
+    $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
+
+    $transactions = $connection->query("SELECT transaction_id, ticket.*, event.name, event.portrait_image_url, transaction_date, transaction.amount AS ticket_amount FROM transactions.transaction
+    JOIN users.user ON transaction.attendee_id = users.user.user_id
+    JOIN tickets.ticket ON transaction.ticket_id = ticket.ticket_id
+    JOIN events.event ON ticket.event_id = event.event_id
+    WHERE attendee_id = " . $_SESSION['user_id'] . " AND is_confirmed = false")->fetchAll(PDO::FETCH_ASSOC);
+
+    if ($transactions) {
+      foreach ($transactions as $transaction) {
+        echo "
+      <a href='./buy_confirmation.php?transaction_id=" . $transaction['transaction_id'] . "' class='group relative block'>
+        <div class='relative p-4 rounded-lg my-4 flex flex-row gap-4 transition-all delay-0 duration-250 ease-in-out'>
+          <img src='" . htmlspecialchars($transaction['portrait_image_url']) . "' class='absolute w-full top-0 left-0 h-full object-cover rounded-lg -z-10 brightness-50 bg-center'>
+          <div class='flex flex-col'>
+            <h1 class='text-slate-100 font-[700] text-4xl'>" . htmlspecialchars($transaction['name']) . "</h1>
+            <h1 class='text-slate-300'>" . htmlspecialchars($transaction['location']) . "</h1>
+            <h1 class='text-slate-300'>" . htmlspecialchars(date_format(date_create($transaction['transaction_date']), "M d, Y (g:i A)")) . "</h1>
+            <h1 class='text-slate-300'>Tickets: " . htmlspecialchars($transaction['ticket_amount']) . "</h1>
+          </div>
+        </div>
+        <div class='absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg'>
+        <span class='text-white text-lg font-bold'>CLICK TO PAY FOR THIS TICKET</span>
+        <span class='text-slate-200 text-lg'>You have a day to pay for this ticket.</span>
+        </div>
+      </a>";
+      }
+    } else {
+      echo "<h1 class='text-lg text-slate-700 my-2'>No tickets bought/confirmed.</h1>";
+    }
+
+    ?>
+    <h1 class="text-2xl text-slate-800 font-[300]">Confirmed Tickets / Transactions</h1>
     <?php
     $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
 
@@ -53,7 +87,7 @@ if (!isset($_SESSION['isLoggedIn'])) {
     JOIN users.user ON transaction.attendee_id = users.user.user_id
     JOIN tickets.ticket ON transaction.ticket_id = ticket.ticket_id
     JOIN events.event ON ticket.event_id = event.event_id
-    WHERE attendee_id = " . $_SESSION['user_id'])->fetchAll(PDO::FETCH_ASSOC);
+    WHERE attendee_id = " . $_SESSION['user_id'] . " AND is_confirmed = true")->fetchAll(PDO::FETCH_ASSOC);
 
     if ($transactions) {
       foreach ($transactions as $transaction) {
@@ -68,7 +102,7 @@ if (!isset($_SESSION['isLoggedIn'])) {
       </div>";
       }
     } else {
-      echo "<h1 class='text-lg text-slate-700 my-2'>No tickets bought.</h1>";
+      echo "<h1 class='text-lg text-slate-700 my-2'>No tickets bought/confirmed.</h1>";
     }
     ?>
   </main>

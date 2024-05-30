@@ -3,48 +3,32 @@ session_start();
 
 $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
+$ticket_details = null;
+$price = null;
+
 if (!isset($_SESSION['isLoggedIn'])) {
   header('Location: ./logins/login.php');
   exit();
 }
 
-$ticket_details = null;
-$price = null;
-$error_message = null;
-
 if (isset($_GET['ticket_id']) && is_numeric($_GET['ticket_id'])) {
-
-  $redirect_url = "./profile.php";
-  $delay = 5;
-
   $ticket_id = intval($_GET['ticket_id']);
 
-  $stmt = $connection->prepare("SELECT ticket_id, quantity, price, location, _date, event.name AS event_name, 
-    _date, cover_image_url, seat_plan_image_url, venue.name AS venue_name 
-    FROM tickets.ticket
-    JOIN events.event ON ticket.event_id = event.event_id
-    JOIN events.venue ON event.venue_id = venue.venue_id
-    WHERE ticket_id = ?");
+  $ticket_details = $connection->query("SELECT ticket_id, quantity, price, location, _date, event.name AS event_name, 
+  _date, cover_image_url, seat_plan_image_url, venue.name AS venue_name 
+  FROM tickets.ticket
+  JOIN events.event ON ticket.event_id = event.event_id
+  JOIN events.venue ON event.venue_id = venue.venue_id
+  WHERE ticket_id = " . $ticket_id)->fetch(PDO::FETCH_ASSOC);
 
-  if ($stmt->execute([$ticket_id])) {
-    $ticket_details = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$ticket_details) {
-      header("Location: ./index.php");
-      exit();
-    }
-    $price = number_format($ticket_details['price'], 2, '.', ',');
-  } else {
-    $error_message = "Error fetching ticket details.";
-  }
+  $price = number_format($ticket_details['price'], 2, '.', ',');
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
+  $ticket_id = intval($_POST['ticket_id']);
+
   try {
-
-    if (isset($_POST['ticket_id']) && is_numeric($_POST['ticket_id'])) {
-      $ticket_id = intval($_POST['ticket_id']);
-    }
-
     $connection->beginTransaction();
 
     $preparedTransactionStmt = $connection->prepare("INSERT INTO transactions.transaction(attendee_id, ticket_id, transaction_date, amount)
@@ -57,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $insertAttendeeStmt = $connection->prepare("INSERT INTO events.attendee (user_id) VALUES (?) RETURNING attendee_id");
       $insertAttendeeStmt->execute([$_SESSION['user_id']]);
 
-      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], $ticket_id, $_POST['ticket_quantity']]);
+      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], intval($_POST['ticket_id']), $_POST['ticket_quantity']]);
 
       $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
       $connection->commit();
@@ -67,11 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     if ($attendeeCheck) {
-      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], $ticket_id, $_POST['ticket_quantity']]);
+      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], intval($_POST['ticket_id']), $_POST['ticket_quantity']]);
 
       $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
       $connection->commit();
-
       header("Location: ./buy_confirmation.php?transaction_id=" . $transaction_id);
       exit();
     }
@@ -80,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $error_message = "Error:" . $e->getMessage();
   }
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -183,7 +167,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           <p class="text-sm text-slate-600 mt-8">You'll be redirected to your profile page in a few seconds... <br><a href="./profile.php" class="text-slate-300">Click here if you're not redirected.</a></p>
         </div>
         <script>
-          setTimeout(function() {}, 5000);
+          setTimeout(function() {
+            window.location.href = "./index.php";
+          }, 5000);
         </script>
       <?php endif; ?>
   </main>
