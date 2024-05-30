@@ -49,10 +49,10 @@ if (!isset($_SESSION['isLoggedIn'])) {
     <?php
     $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'administrator', 'admin');
 
-    $transactions = $connection->query("SELECT ticket.*, event.name, event.portrait_image_url, transaction_date, transaction.amount AS ticket_amount FROM transaction
-    JOIN users ON transaction.attendee_id = users.user_id
-    JOIN ticket ON transaction.ticket_id = ticket.ticket_id
-    JOIN event ON ticket.event_id = event.event_id
+    $transactions = $connection->query("SELECT ticket.*, event.name, event.portrait_image_url, transaction_date, transaction.amount AS ticket_amount FROM transactions.transaction
+    JOIN users.user ON transaction.attendee_id = users.user.user_id
+    JOIN tickets.ticket ON transaction.ticket_id = ticket.ticket_id
+    JOIN events.event ON ticket.event_id = event.event_id
     WHERE attendee_id = " . $_SESSION['user_id'])->fetchAll(PDO::FETCH_ASSOC);
 
     if ($transactions) {
@@ -70,9 +70,7 @@ if (!isset($_SESSION['isLoggedIn'])) {
     } else {
       echo "<h1 class='text-lg text-slate-700 my-2'>No tickets bought.</h1>";
     }
-
     ?>
-
   </main>
   <?php include './components/footerComponent.php' ?>
 </body>
