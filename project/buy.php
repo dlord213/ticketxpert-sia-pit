@@ -2,8 +2,7 @@
 session_start();
 
 $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
-
-echo var_dump($_POST);
+$connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $ticket_details = null;
 $price = null;
@@ -27,56 +26,44 @@ if (isset($_GET['ticket_id']) && is_numeric($_GET['ticket_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-
   $ticket_id = intval($_POST['ticket_id']);
-  $new_quantity = $ticket_details['quantity'] - (int) intval($_POST['ticket_quantity']);
-  $formattedQuantity = max(0, $new_quantity);
+  $ticket_quantity = intval($_POST['ticket_quantity']);
+  $new_quantity = max(0, $ticket_details['quantity'] - $ticket_quantity);
 
   try {
     $connection->beginTransaction();
 
     $preparedTransactionStmt = $connection->prepare("INSERT INTO transactions.transaction(attendee_id, ticket_id, transaction_date, amount)
-    VALUES (?, ?, CURRENT_TIMESTAMP, ?);");
+    VALUES (?, ?, CURRENT_TIMESTAMP, ?)");
 
-    $attendeeCheck = $connection->query("SELECT user_id FROM users.user
-    WHERE user_id = " . $_SESSION['user_id'])->fetch(PDO::FETCH_ASSOC);
+    $attendeeCheck = $connection->query("SELECT user_id FROM events.attendee WHERE user_id = " . $_SESSION['user_id'])->fetch(PDO::FETCH_ASSOC);
 
     if (!$attendeeCheck) {
-      $insertAttendeeStmt = $connection->prepare("INSERT INTO events.attendee (user_id) VALUES (?) RETURNING attendee_id");
+      $insertAttendeeStmt = $connection->prepare("INSERT INTO events.attendee (user_id) VALUES (?) RETURNING user_id");
       $insertAttendeeStmt->execute([$_SESSION['user_id']]);
-
-      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], intval($_POST['ticket_id']), $_POST['ticket_quantity']]);
-
-      $connection->query("UPDATE tickets.ticket
-      SET quantity = $formattedQuantity
-      WHERE ticket_id = " . intval($_POST['ticket_id']));
-
-      $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
-      $connection->commit();
-
-      header("Location: ./buy_confirmation.php?transaction_id=" . $transaction_id);
-      exit();
+      $attendee_id = $insertAttendeeStmt->fetchColumn();
+      $preparedTransactionStmt->execute([$attendee_id, $ticket_id, $ticket_quantity]);
+    } else {
+      $preparedTransactionStmt->execute([$attendeeCheck['attendee_id'], $ticket_id, $ticket_quantity]);
     }
 
-    if ($attendeeCheck) {
-      $preparedTransactionStmt->execute([$attendeeCheck['user_id'], intval($_POST['ticket_id']), $_POST['ticket_quantity']]);
+    $updateStmt = $connection->prepare("UPDATE tickets.ticket SET quantity = :new_quantity WHERE ticket_id = :ticket_id");
+    $updateStmt->bindParam(':new_quantity', $new_quantity, PDO::PARAM_INT);
+    $updateStmt->bindParam(':ticket_id', $ticket_id, PDO::PARAM_INT);
+    $updateStmt->execute();
 
-      $connection->query("UPDATE tickets.ticket
-      SET quantity = $new_quantity
-      WHERE ticket_id = " . intval($_POST['ticket_id']));
+    $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
+    $connection->commit();
 
-      $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
-      $connection->commit();
-      header("Location: ./buy_confirmation.php?transaction_id=" . $transaction_id);
-      exit();
-    }
+    header("Location: ./buy_confirmation.php?transaction_id=" . $transaction_id);
+    exit();
   } catch (PDOException $e) {
     $connection->rollBack();
-    $error_message = "Error:" . $e->getMessage();
+    echo "Error: " . $e->getMessage();
   }
 }
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
