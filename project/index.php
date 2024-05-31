@@ -1,5 +1,6 @@
 <?php
 session_start();
+$connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 ?>
 
 <!DOCTYPE html>

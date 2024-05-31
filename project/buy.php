@@ -3,6 +3,8 @@ session_start();
 
 $connection = new PDO("pgsql:host=localhost;port=5432;dbname=ticketxpert", 'public_user', 'public_user');
 
+echo var_dump($_POST);
+
 $ticket_details = null;
 $price = null;
 
@@ -27,8 +29,8 @@ if (isset($_GET['ticket_id']) && is_numeric($_GET['ticket_id'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
   $ticket_id = intval($_POST['ticket_id']);
-  $new_quantity = $ticket_details['quantity'] - intval($_POST['ticket_quantity']);
-  $new_quantity = max(0, $new_quantity);
+  $new_quantity = $ticket_details['quantity'] - (int) intval($_POST['ticket_quantity']);
+  $formattedQuantity = max(0, $new_quantity);
 
   try {
     $connection->beginTransaction();
@@ -46,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
       $preparedTransactionStmt->execute([$attendeeCheck['user_id'], intval($_POST['ticket_id']), $_POST['ticket_quantity']]);
 
       $connection->query("UPDATE tickets.ticket
-      SET quantity = $new_quantity
+      SET quantity = $formattedQuantity
       WHERE ticket_id = " . intval($_POST['ticket_id']));
 
       $transaction_id = $connection->lastInsertId('transactions.transaction_transaction_id_seq');
