@@ -26,6 +26,7 @@ if (isset($_GET['ticket_id']) && is_numeric($_GET['ticket_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+
   $ticket_id = intval($_POST['ticket_id']);
   $ticket_quantity = intval($_POST['ticket_quantity']);
   $new_quantity = max(0, $ticket_details['quantity'] - $ticket_quantity);
@@ -36,16 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $preparedTransactionStmt = $connection->prepare("INSERT INTO transactions.transaction(attendee_id, ticket_id, transaction_date, amount)
     VALUES (?, ?, CURRENT_TIMESTAMP, ?)");
 
-    $attendeeCheck = $connection->query("SELECT user_id FROM events.attendee WHERE user_id = " . $_SESSION['user_id'])->fetch(PDO::FETCH_ASSOC);
-
-    if (!$attendeeCheck) {
-      $insertAttendeeStmt = $connection->prepare("INSERT INTO events.attendee (user_id) VALUES (?) RETURNING user_id");
-      $insertAttendeeStmt->execute([$_SESSION['user_id']]);
-      $attendee_id = $insertAttendeeStmt->fetchColumn();
-      $preparedTransactionStmt->execute([$attendee_id, $ticket_id, $ticket_quantity]);
-    } else {
-      $preparedTransactionStmt->execute([$attendeeCheck['attendee_id'], $ticket_id, $ticket_quantity]);
-    }
+    $preparedTransactionStmt->execute([$_SESSION['user_id'], $ticket_id, $ticket_quantity]);
 
     $updateStmt = $connection->prepare("UPDATE tickets.ticket SET quantity = :new_quantity WHERE ticket_id = :ticket_id");
     $updateStmt->bindParam(':new_quantity', $new_quantity, PDO::PARAM_INT);
@@ -59,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     exit();
   } catch (PDOException $e) {
     $connection->rollBack();
-    echo "Error: " . $e->getMessage();
+    $error_message = "Error:" . $e->getMessage();
   }
 }
-?>
 
+?>
 
 <!DOCTYPE html>
 <html lang="en">

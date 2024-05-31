@@ -37,8 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $connection->beginTransaction();
 
     $preparedStmt = $connection->prepare("UPDATE transactions.transaction
-    SET reference_number = ?,
-      is_confirmed = true
+    SET reference_number = ?
     WHERE transaction_id = ?");
 
     $preparedStmt->execute([$_POST['reference_number'], intval($_POST['transaction_id'])]);

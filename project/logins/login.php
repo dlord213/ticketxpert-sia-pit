@@ -20,6 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $user = $query->fetch(PDO::FETCH_ASSOC);
 
+
+
     if ($user) {
       if (password_verify($password, $user['password'])) {
         $_SESSION['user_id'] = $user['user_id'];
@@ -29,6 +31,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['address'] = $user['address'];
         $_SESSION['contact_number'] = $user['contact_number'];
         $_SESSION['isLoggedIn'] = true;
+
+        $user_id = $_SESSION['user_id'];
+
+        $attendeeCheck = $connection->query("SELECT user_id FROM events.attendee WHERE user_id = " . $user_id)->fetch(PDO::FETCH_ASSOC);
+
+        if (!$attendeeCheck) {
+          try {
+            $insertAttendeeStmt = $connection->prepare("INSERT INTO events.attendee(user_id) VALUES (?)");
+            $insertAttendeeStmt->execute([$user_id]);
+          } catch (PDOException $e) {
+            $connection->rollBack();
+            echo "Error inserting attendee: " . $e->getMessage();
+            exit();
+          }
+        }
+
         header('Location: ../index.php');
         exit();
       } else {

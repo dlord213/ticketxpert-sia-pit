@@ -66,7 +66,7 @@ try {
         </svg>
         <h1 class="font-[900] text-4xl">Transaction successful</h1>
       </div>
-      <p class="text-slate-800 text-center">Please check your profile for the ticket and the transaction details.</p>
+      <p class="text-slate-800 text-center">Please wait a few hours for confirmation and check your profile for the ticket and the transaction details.</p>
       <hr class="w-full bg-slate-800 my-4 border-dashed">
       <p class="text-sm text-slate-600">You'll be redirected to your profile page in a few seconds... <br><a href="./profile.php" class="text-slate-300">Click here if you're not redirected.</a></p>
     </div>
